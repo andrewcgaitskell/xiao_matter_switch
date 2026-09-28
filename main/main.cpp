@@ -149,17 +149,6 @@ extern "C" void app_main(void)
     // ============================================================================
     // STEP 8: Ready for commissioning
     // ============================================================================
-    ESP_LOGI(TAG, "========================================");
-    ESP_LOGI(TAG, "Device READY for Home Assistant pairing!");
-    ESP_LOGI(TAG, "");
-    ESP_LOGI(TAG, "Matter Setup Code (default): 20202021");
-    ESP_LOGI(TAG, "Discriminator (default): 3840");
-    ESP_LOGI(TAG, "");
-    ESP_LOGI(TAG, "In Home Assistant:");
-    ESP_LOGI(TAG, "  Settings > Devices & Services > Matter");
-    ESP_LOGI(TAG, "  Add Device > Setup Code: 20202021");
-    ESP_LOGI(TAG, "");
-    ESP_LOGI(TAG, "========================================");
 
     ESP_LOGI(TAG, "Firmware boot complete. Waiting for pairing...");
 }
