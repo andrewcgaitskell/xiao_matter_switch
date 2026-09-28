@@ -1,9 +1,13 @@
 #include <esp_log.h>
 #include <nvs_flash.h>
 #include <esp_matter.h>
+#include <esp_openthread.h>
 #include <esp_openthread_types.h>
+#include <openthread/thread.h>
 #include "OpenthreadLauncher.h"
 #include <string.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 // Wrap underlying drivers natively for the C++ linker
 extern "C" {
@@ -78,7 +82,7 @@ extern "C" void app_main(void)
     // STEP 5: Create On/Off Light Endpoint (simpler than generic_switch)
     // ============================================================================
     esp_matter::endpoint::on_off_light::config_t light_config;
-    
+
     esp_matter::endpoint_t *endpoint = esp_matter::endpoint::on_off_light::create(
         node, &light_config, esp_matter::ENDPOINT_FLAG_NONE, NULL
     );
@@ -95,13 +99,13 @@ extern "C" void app_main(void)
     // ============================================================================
     esp_openthread_platform_config_t ot_config = {
         .radio_config = {
-            .radio_mode = RADIO_MODE_NATIVE,  // Use ESP32-C6's native 802.15.4 radio
+            .radio_mode = RADIO_MODE_NATIVE,
         },
         .host_config = {
-            .host_connection_mode = HOST_CONNECTION_MODE_NONE,  // No CLI needed
+            .host_connection_mode = HOST_CONNECTION_MODE_NONE,
         },
         .port_config = {
-            .storage_partition_name = "nvs",  // Use NVS for Thread credentials
+            .storage_partition_name = "nvs",
             .netif_queue_size = 10,
             .task_queue_size = 10,
         },
@@ -114,6 +118,33 @@ extern "C" void app_main(void)
     // ============================================================================
     esp_matter::start(NULL);
     ESP_LOGI(TAG, "Matter stack started.");
+
+    // Wait for the device to attach to the Thread network before advertising as ready.
+    // This is important when the OTBR and Home Assistant are already up and running.
+    ESP_LOGI(TAG, "Waiting for Thread network attach...");
+    otInstance *ot_instance = esp_openthread_get_instance();
+    if (ot_instance != NULL) {
+        const uint32_t timeout_ms = 60000;
+        uint32_t elapsed_ms = 0;
+
+        while (elapsed_ms < timeout_ms) {
+            otDeviceRole role = otThreadGetDeviceRole(ot_instance);
+            if (role == OT_DEVICE_ROLE_CHILD || role == OT_DEVICE_ROLE_ROUTER || role == OT_DEVICE_ROLE_LEADER) {
+                ESP_LOGI(TAG, "Thread network attached. Device role=%d", role);
+                break;
+            }
+
+            ESP_LOGI(TAG, "Thread not attached yet; waiting... role=%d", role);
+            vTaskDelay(pdMS_TO_TICKS(1000));
+            elapsed_ms += 1000;
+        }
+
+        if (elapsed_ms >= timeout_ms) {
+            ESP_LOGW(TAG, "Thread network not attached within timeout. Home Assistant may still be able to commission if the OTBR is reachable, but the device is not joined.");
+        }
+    } else {
+        ESP_LOGW(TAG, "OpenThread instance unavailable; continuing without waiting.");
+    }
 
     // ============================================================================
     // STEP 8: Ready for commissioning
