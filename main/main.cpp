@@ -25,7 +25,6 @@ extern "C" void app_main(void)
     // ============================================================================
     // STEP 1: FACTORY RESET - Erase all commissioning fabric data
     // ============================================================================
-    // This ensures the device starts fresh and will advertise for pairing
     ESP_LOGI(TAG, "=== FACTORY RESET: Erasing commissioning data ===");
     nvs_flash_erase();
     ESP_LOGI(TAG, "NVS flash erased. Device will start as uncommissioned.");
@@ -69,22 +68,26 @@ extern "C" void app_main(void)
     // ============================================================================
     esp_matter::node::config_t node_config;
     esp_matter::node_t *node = esp_matter::node::create(&node_config, NULL, NULL);
-    ESP_LOGI(TAG, "Matter node created.");
+    if (!node) {
+        ESP_LOGE(TAG, "Failed to create Matter node!");
+        return;
+    }
+    ESP_LOGI(TAG, "Matter node created successfully.");
 
     // ============================================================================
-    // STEP 5: Create Momentary Switch Endpoint
+    // STEP 5: Create On/Off Light Endpoint (simpler than generic_switch)
     // ============================================================================
-    esp_matter::endpoint::generic_switch::config_t switch_config;
-    switch_config.switch_cluster.feature_flags = esp_matter::cluster::switch_cluster::feature::momentary_switch::get_id();
-
-    esp_matter::endpoint_t *endpoint = esp_matter::endpoint::generic_switch::create(
-        node, &switch_config, esp_matter::ENDPOINT_FLAG_NONE, btn_handle
+    esp_matter::endpoint::on_off_light::config_t light_config;
+    
+    esp_matter::endpoint_t *endpoint = esp_matter::endpoint::on_off_light::create(
+        node, &light_config, esp_matter::ENDPOINT_FLAG_NONE, NULL
     );
 
     if (endpoint) {
-        ESP_LOGI(TAG, "Momentary Generic Switch endpoint created.");
+        ESP_LOGI(TAG, "On/Off Light endpoint created successfully.");
     } else {
-        ESP_LOGE(TAG, "Failed to create Generic Switch endpoint!");
+        ESP_LOGE(TAG, "Failed to create On/Off Light endpoint!");
+        return;
     }
 
     // ============================================================================
