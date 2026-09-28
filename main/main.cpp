@@ -22,7 +22,11 @@ static void touch_sensor_callback(void *arg, void *usr_data)
 
 extern "C" void app_main(void)
 {
-    // 1. Initialize safe local flash storage for Thread credentials
+    // 1. FACTORY RESET: Erase all commissioned fabric data from NVS
+    ESP_LOGI(TAG, "Performing factory reset - erasing commissioning data...");
+    nvs_flash_erase();
+    
+    // 2. Initialize safe local flash storage for Thread credentials
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
         ESP_ERROR_CHECK(nvs_flash_erase());
@@ -30,13 +34,13 @@ extern "C" void app_main(void)
     }
     ESP_ERROR_CHECK(err);
 
-    // 2. Configure button timing profiles
+    // 3. Configure button timing profiles
     button_config_t btn_cfg;
     memset(&btn_cfg, 0, sizeof(button_config_t));
     btn_cfg.long_press_time = 1000;
     btn_cfg.short_press_time = 50;
 
-    // 3. Configure physical GPIO hardware parameters separately
+    // 4. Configure physical GPIO hardware parameters separately
     button_gpio_config_t gpio_cfg;
     memset(&gpio_cfg, 0, sizeof(button_gpio_config_t));
     gpio_cfg.gpio_num = GPIO_NUM_18; // Maps to your physical D10 line on the XIAO C6
@@ -54,11 +58,11 @@ extern "C" void app_main(void)
         ESP_LOGE(TAG, "Failed to instantiate the hardware button module!");
     }
 
-    // 4. Initialize your clean Matter Node profile
+    // 5. Initialize your clean Matter Node profile
     esp_matter::node::config_t node_config;
     esp_matter::node_t *node = esp_matter::node::create(&node_config, NULL, NULL);
 
-    // 5. Create an On/Off Light Switch endpoint configuration
+    // 6. Create an On/Off Light Switch endpoint configuration
     esp_matter::endpoint::generic_switch::config_t switch_config;
 
     // Explicitly seed the Momentary Switch feature flag inside the configuration struct
@@ -77,7 +81,7 @@ extern "C" void app_main(void)
         ESP_LOGE(TAG, "Failed to instantiate Generic Switch Endpoint!");
     }
 
-    // 6. Configure and hand off the OpenThread radio/host settings before starting the stack.
+    // 7. Configure and hand off the OpenThread radio/host settings before starting the stack.
     //    This MUST run before esp_matter::start(), which spins up the FreeRTOS task that
     //    reads this config when it calls openthread_init_stack().
     esp_openthread_platform_config_t ot_config = {
@@ -95,8 +99,13 @@ extern "C" void app_main(void)
     };
     ESP_ERROR_CHECK(set_openthread_platform_config(&ot_config));
 
-    // 7. Fire up the Thread mesh radio stack and Matter layers
+    // 8. Fire up the Thread mesh radio stack and Matter layers
     esp_matter::start(NULL);
-    ESP_LOGI(TAG, "Matter-over-Thread firmware is live! Awaiting commissioning pairing...");
+    
+    // 9. Open commissioning window so Home Assistant can discover and pair the device
+    ESP_LOGI(TAG, "Opening commissioning window (15 minutes)...");
+    esp_matter::commissioning_window_open(NULL);
+    
+    ESP_LOGI(TAG, "Matter-over-Thread firmware is live! Device is in commissioning mode - ready for Home Assistant pairing");
 }
 
