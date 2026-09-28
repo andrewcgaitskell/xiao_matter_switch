@@ -65,22 +65,11 @@ extern "C" void app_main(void)
     }
 
     // ============================================================================
-    // STEP 4: Create Matter Node with commissioning parameters
+    // STEP 4: Create Matter Node
     // ============================================================================
     esp_matter::node::config_t node_config;
-    
-    // Set commissioning parameters for Home Assistant pairing
-    // Setup Code (8 digits): 20202021
-    // Discriminator: 3840 (0xF00)
-    node_config.discriminator = 0xF00;      // Discriminator used in BLE advertisement
-    node_config.passcode = 20202021;        // Setup code for commissioning
-    
-    ESP_LOGI(TAG, "Matter commissioning config:");
-    ESP_LOGI(TAG, "  Setup Code (Passcode): 20202021");
-    ESP_LOGI(TAG, "  Discriminator: 3840");
-    
     esp_matter::node_t *node = esp_matter::node::create(&node_config, NULL, NULL);
-    ESP_LOGI(TAG, "Matter node created with commissioning parameters.");
+    ESP_LOGI(TAG, "Matter node created.");
 
     // ============================================================================
     // STEP 5: Create Momentary Switch Endpoint
@@ -129,9 +118,12 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "========================================");
     ESP_LOGI(TAG, "Device READY for Home Assistant pairing!");
     ESP_LOGI(TAG, "");
+    ESP_LOGI(TAG, "Matter Setup Code (default): 20202021");
+    ESP_LOGI(TAG, "Discriminator (default): 3840");
+    ESP_LOGI(TAG, "");
     ESP_LOGI(TAG, "In Home Assistant:");
     ESP_LOGI(TAG, "  Settings > Devices & Services > Matter");
-    ESP_LOGI(TAG, "  Add Device > Enter Setup Code: 20202021");
+    ESP_LOGI(TAG, "  Add Device > Setup Code: 20202021");
     ESP_LOGI(TAG, "");
     ESP_LOGI(TAG, "========================================");
 
