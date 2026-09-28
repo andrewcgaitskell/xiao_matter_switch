@@ -113,17 +113,15 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "Matter stack started.");
 
     // ============================================================================
-    // STEP 8: CRITICAL - Open commissioning window
+    // STEP 8: Ready for commissioning
     // ============================================================================
-    // This allows Home Assistant and other Matter controllers to discover and pair
-    // the device. Without this, the device won't advertise for commissioning.
+    // Because NVS was erased in STEP 1, the device has no saved fabric.
+    // The Matter stack will automatically advertise for commissioning.
     ESP_LOGI(TAG, "========================================");
-    ESP_LOGI(TAG, "Opening commissioning window (900 sec / 15 min)");
-    ESP_LOGI(TAG, "Device is NOW READY for Home Assistant pairing!");
-    ESP_LOGI(TAG, "Go to: Settings > Devices & Services > Matter");
+    ESP_LOGI(TAG, "Device is READY for Home Assistant pairing!");
+    ESP_LOGI(TAG, "Look in Home Assistant:");
+    ESP_LOGI(TAG, "Settings > Devices & Services > Matter");
     ESP_LOGI(TAG, "========================================");
-    
-    esp_matter::commissioning_window_open(NULL);
 
     ESP_LOGI(TAG, "Firmware boot complete. Waiting for pairing...");
 }
